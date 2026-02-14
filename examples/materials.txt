@@ -1,0 +1,3 @@
+Material de referencia:
+- Semana 1: limpieza de datos, outliers, métricas descriptivas.
+- Semana 2: visualizaciones básicas y storytelling con datos.

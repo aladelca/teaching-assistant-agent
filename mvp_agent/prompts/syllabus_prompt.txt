@@ -1,0 +1,36 @@
+Tarea: Analiza el sílabo y extrae criterios de evaluación, pesos y políticas.
+Devuelve SOLO JSON válido con el esquema indicado. No inventes información.
+
+Instrucciones:
+- Si un dato no aparece, usa null y agrega una pregunta en open_questions.
+- Incluye evidencia textual breve por cada criterio.
+- Marca inconsistencias entre secciones en inconsistencies.
+- Escala de calificación es 0–20 si el sílabo no indica otra.
+
+Sílabo (texto):
+{syllabus_text}
+
+Esquema:
+{
+  "course_name": "string|null",
+  "scale_min": 0,
+  "scale_max": 20,
+  "criteria": [
+    {
+      "name": "string",
+      "weight": 0.0,
+      "description": "string",
+      "evidence": "string",
+      "needs_confirmation": false
+    }
+  ],
+  "policies": [
+    {
+      "name": "string",
+      "detail": "string",
+      "evidence": "string"
+    }
+  ],
+  "inconsistencies": ["string"],
+  "open_questions": ["string"]
+}

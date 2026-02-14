@@ -1,0 +1,30 @@
+{
+  "course": "Curso de Ejemplo",
+  "scale": {"min": 0, "max": 20},
+  "criteria": [
+    {
+      "name": "Correctitud técnica",
+      "weight": 0.4,
+      "description": "Resultados correctos y verificables"
+    },
+    {
+      "name": "Razonamiento y justificación",
+      "weight": 0.3,
+      "description": "Explica el proceso y las decisiones"
+    },
+    {
+      "name": "Calidad del análisis",
+      "weight": 0.2,
+      "description": "Conclusiones basadas en evidencia"
+    },
+    {
+      "name": "Presentación y claridad",
+      "weight": 0.1,
+      "description": "Orden, limpieza y legibilidad"
+    }
+  ],
+  "policies": {
+    "late_penalty": "5% por día",
+    "min_requirements": "Resultados reproducibles"
+  }
+}

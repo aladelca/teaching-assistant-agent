@@ -1,0 +1,113 @@
+Metadata-Version: 2.4
+Name: mvp-agent-correccion
+Version: 0.1.0
+Summary: MVP de agente para corregir notebooks y generar feedback con nota final.
+Requires-Python: >=3.10
+Description-Content-Type: text/markdown
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: ruff>=0.3.0; extra == "dev"
+Provides-Extra: browser
+Requires-Dist: playwright>=1.40; extra == "browser"
+
+# MVP Agente de Corrección (Notebooks)
+
+**Qué hace**
+- Lee un notebook `.ipynb`, un enunciado y una rúbrica.
+- Genera nota final (0–20) y feedback con evidencia.
+- Produce salidas listas para modo “sin admin” (CSV + textos).
+
+**Estructura**
+- `mvp_agent/`: código del agente.
+- `prompts/`: plantillas de prompts.
+- `inputs/`: insumos (sílabos, enunciados, etc.).
+- `outputs/`: resultados por ejecución.
+
+**Rúbrica (JSON)**
+```json
+{
+  "course": "Curso X",
+  "scale": {"min": 0, "max": 20},
+  "criteria": [
+    {"name": "Correctitud técnica", "weight": 0.4, "description": "Resultados correctos"},
+    {"name": "Razonamiento", "weight": 0.3, "description": "Explicaciones claras"},
+    {"name": "Análisis", "weight": 0.2, "description": "Conclusiones sólidas"},
+    {"name": "Presentación", "weight": 0.1, "description": "Orden y claridad"}
+  ],
+  "policies": {"late_penalty": "5% por día"}
+}
+```
+
+**Ejecutar en modo mock (sin LLM)**
+```bash
+python3 -m mvp_agent.cli \
+  --notebook inputs/ejemplo.ipynb \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --student-id estudiante@correo.com
+```
+
+**Ejecutar con LLM (HTTP)**
+Requiere variables de entorno:
+- `LLM_API_URL`
+- `LLM_API_KEY` (si aplica)
+- `LLM_MODEL`
+- `LLM_PAYLOAD_MODE` (`messages` o `input`)
+- `LLM_RESPONSE_PATH` (ruta al texto en la respuesta JSON)
+
+Ejemplo:
+```bash
+export LLM_API_URL="https://tu-endpoint"
+export LLM_MODEL="tu-modelo"
+export LLM_PAYLOAD_MODE="messages"
+export LLM_RESPONSE_PATH="choices.0.message.content"
+
+python3 -m mvp_agent.cli \
+  --llm-provider http \
+  --notebook inputs/ejemplo.ipynb \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --student-id estudiante@correo.com
+```
+
+**Salidas**
+- `context_package.json`
+- `evaluation.json`
+- `validation.json`
+- `feedback_student.txt`
+- `feedback_instructor.txt`
+- `gradebook_updates.csv`
+- `flags.csv` (si aplica)
+
+**Tests**
+```bash
+python3 -m pytest
+```
+
+**Browser Assist (sin credenciales)**
+Este modo NO maneja contraseñas. Abre el navegador, tú inicias sesión y el script
+ayuda a pegar feedback o subir el CSV.
+
+Requiere Playwright:
+```bash
+pip install playwright
+playwright install
+```
+
+Ejemplo Blackboard (subir CSV):
+```bash
+python3 -m mvp_agent.browser_assist \
+  --config examples/blackboard_steps.json \
+  --output-dir outputs/estudiante@correo.com_20250211T000000Z
+```
+
+Ejemplo Teams (pegar feedback):
+```bash
+python3 -m mvp_agent.browser_assist \
+  --config examples/teams_steps.json \
+  --output-dir outputs/estudiante@correo.com_20250211T000000Z
+```
+
+Puedes ajustar los selectores en los archivos JSON según la UI real.

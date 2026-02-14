@@ -1,0 +1,3 @@
+[console_scripts]
+browser-assist = mvp_agent.browser_assist:main
+mvp-agent = mvp_agent.cli:main

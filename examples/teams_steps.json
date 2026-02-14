@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "action": "goto",
+      "url": "https://teams.microsoft.com"
+    },
+    {
+      "action": "pause",
+      "message": "Inicia sesión, abre la tarea del alumno y selecciona el cuadro de feedback. Presiona Enter."
+    },
+    {
+      "action": "fill",
+      "selector": "textarea",
+      "value": "{feedback}"
+    },
+    {
+      "action": "pause",
+      "message": "Revisa el feedback pegado y asigna la nota manualmente. Presiona Enter para terminar."
+    }
+  ]
+}

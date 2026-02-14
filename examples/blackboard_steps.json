@@ -1,0 +1,21 @@
+{
+  "steps": [
+    {
+      "action": "goto",
+      "url": "https://TU-BLACKBOARD-URL"
+    },
+    {
+      "action": "pause",
+      "message": "Inicia sesión y navega al Gradebook (Work Offline). Luego presiona Enter."
+    },
+    {
+      "action": "upload",
+      "selector": "input[type='file']",
+      "path": "{gradebook_csv}"
+    },
+    {
+      "action": "pause",
+      "message": "Completa el flujo de importación y verifica la previsualización. Presiona Enter para terminar."
+    }
+  ]
+}

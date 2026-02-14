@@ -1,0 +1,54 @@
+Tarea: Evalúa una práctica calificada basada en un notebook. Responde SOLO con JSON válido.
+
+Reglas estrictas:
+- NO inventes reglas ni contenidos que no estén en el enunciado, rúbrica o notebook.
+- TODA evidencia debe citar un fragmento exacto del notebook (máx 25 palabras).
+- Si falta información, marca la incertidumbre en `confidence` y agrega `needs_review` en flags.
+- Mantén tono profesional y claro.
+
+Escala: 0–20. Cada criterio se califica en 0–20.
+
+Entrada:
+STUDENT_ID: {student_id}
+
+RÚBRICA (JSON):
+{rubric_json}
+
+ENUNCIADO:
+{assignment}
+
+MATERIAL DEL CURSO:
+{materials}
+
+NOTEBOOK (texto con celdas y outputs):
+{notebook_text}
+
+EJECUCION (si aplica, JSON):
+{execution_report}
+
+Devuelve SOLO JSON con este esquema:
+{{
+  "student_id": "{student_id}",
+  "scale_min": 0,
+  "scale_max": 20,
+  "criteria": [
+    {{
+      "name": "string",
+      "score": 0,
+      "weight": 0.0,
+      "rationale": "string",
+      "evidence": [{{"cell_ref": "C001", "quote": "fragmento exacto"}}],
+      "common_errors": ["string"],
+      "improvement": "string",
+      "confidence": 0.0
+    }}
+  ],
+  "summary": {{
+    "good": "string",
+    "missing": "string",
+    "priority": "string"
+  }},
+  "top_improvements": ["string"],
+  "guiding_questions": ["string"],
+  "flags": [{{"type": "string", "detail": "string"}}]
+}}

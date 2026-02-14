@@ -1,0 +1,6 @@
+Práctica Calificada 1
+Objetivo: implementar un análisis exploratorio con métricas descriptivas y conclusiones.
+Requisitos:
+- Cargar dataset provisto.
+- Incluir al menos 2 visualizaciones.
+- Concluir con 3 hallazgos.
