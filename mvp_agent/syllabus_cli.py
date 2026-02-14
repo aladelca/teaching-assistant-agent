@@ -5,7 +5,7 @@ from .agents_sdk_client import agents_complete
 from .codex_cli_client import codex_complete
 from .llm_client import http_complete
 from .syllabus import extract_syllabus_text
-from .utils import extract_json_block
+from .utils import extract_json_block, read_text
 
 
 def parse_args():
@@ -36,11 +36,6 @@ def parse_args():
     return ap.parse_args()
 
 
-def _read_text(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return f.read()
-
-
 def main():
     args = parse_args()
     extraction = extract_syllabus_text(
@@ -53,7 +48,7 @@ def main():
     if not text:
         raise SystemExit("No se pudo extraer texto del sílabo.")
 
-    prompt_template = _read_text(args.prompt)
+    prompt_template = read_text(args.prompt)
     prompt = prompt_template.format(syllabus_text=text)
     system = "Extrae rúbrica y políticas. Devuelve SOLO JSON válido."
 

@@ -158,6 +158,7 @@ uv run python -m mvp_agent.cli \
 Requisitos:
 - Tener `codex` instalado en tu máquina (`npm i -g @openai/codex`).
 - Haber iniciado sesión: `codex login`.
+- Si `codex login` falla por puerto local ocupado, usa: `codex login --device-auth`.
 
 Ejemplo:
 ```bash

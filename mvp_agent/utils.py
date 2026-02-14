@@ -2,12 +2,34 @@ import json
 import os
 import re
 from datetime import datetime
+from importlib import resources
+
+_PACKAGED_TEXT_ALIASES = {
+    "mvp_agent/prompts/evaluator_prompt.txt": ("mvp_agent.prompts", "evaluator_prompt.txt"),
+    "mvp_agent/prompts/syllabus_prompt.txt": ("mvp_agent.prompts", "syllabus_prompt.txt"),
+    "evaluator_prompt.txt": ("mvp_agent.prompts", "evaluator_prompt.txt"),
+    "syllabus_prompt.txt": ("mvp_agent.prompts", "syllabus_prompt.txt"),
+}
 
 
 def read_text(path):
     if not path:
         return ""
-    with open(path, "r", encoding="utf-8") as f:
+
+    path_str = str(path)
+    if os.path.exists(path_str):
+        with open(path_str, "r", encoding="utf-8") as f:
+            return f.read()
+
+    packaged = _PACKAGED_TEXT_ALIASES.get(path_str)
+    if packaged:
+        package_name, resource_name = packaged
+        try:
+            return resources.files(package_name).joinpath(resource_name).read_text(encoding="utf-8")
+        except (FileNotFoundError, ModuleNotFoundError):
+            pass
+
+    with open(path_str, "r", encoding="utf-8") as f:
         return f.read()
 
 
