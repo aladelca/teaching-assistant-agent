@@ -1,8 +1,8 @@
 import json
-import os
 
 from . import llm_client
 from .agents_sdk_client import agents_complete
+from .codex_cli_client import codex_complete
 from .utils import extract_json_block, read_text
 
 
@@ -48,7 +48,7 @@ def mock_evaluate(context):
     for idx, c in enumerate(criteria):
         eval_criteria.append(
             {
-                "name": c.get("name", f"Criterio {idx+1}"),
+                "name": c.get("name", f"Criterio {idx + 1}"),
                 "score": base_score,
                 "weight": weights[idx],
                 "rationale": "Evaluación preliminar basada en verificación automática básica.",
@@ -78,16 +78,12 @@ def mock_evaluate(context):
             "¿Cuál es la evidencia más fuerte que respalda tu conclusión?",
             "¿Qué parte del análisis es más difícil de reproducir y por qué?",
         ],
-        "flags": [
-            {"type": "needs_review", "detail": "Salida generada en modo mock."}
-        ],
+        "flags": [{"type": "needs_review", "detail": "Salida generada en modo mock."}],
     }
 
 
 def evaluate_with_llm(context, prompt_path, model, temperature=0.2, max_tokens=1200):
-    system = (
-        "Eres un evaluador académico. Devuelve SOLO JSON válido según el esquema."
-    )
+    system = "Eres un evaluador académico. Devuelve SOLO JSON válido según el esquema."
     prompt_template = read_text(prompt_path)
     if not prompt_template:
         raise ValueError("Prompt template is empty")
@@ -98,7 +94,9 @@ def evaluate_with_llm(context, prompt_path, model, temperature=0.2, max_tokens=1
         assignment=context["assignment"],
         materials=context["materials"],
         notebook_text=context["notebook"]["text"],
-        execution_report=json.dumps(context.get("execution_report", {}), ensure_ascii=False, indent=2),
+        execution_report=json.dumps(
+            context.get("execution_report", {}), ensure_ascii=False, indent=2
+        ),
     )
 
     text = llm_client.http_complete(
@@ -112,9 +110,7 @@ def evaluate_with_llm(context, prompt_path, model, temperature=0.2, max_tokens=1
 
 
 def evaluate_with_agents(context, prompt_path, model):
-    system = (
-        "Eres un evaluador académico. Devuelve SOLO JSON válido según el esquema."
-    )
+    system = "Eres un evaluador académico. Devuelve SOLO JSON válido según el esquema."
     prompt_template = read_text(prompt_path)
     if not prompt_template:
         raise ValueError("Prompt template is empty")
@@ -125,8 +121,31 @@ def evaluate_with_agents(context, prompt_path, model):
         assignment=context["assignment"],
         materials=context["materials"],
         notebook_text=context["notebook"]["text"],
-        execution_report=json.dumps(context.get("execution_report", {}), ensure_ascii=False, indent=2),
+        execution_report=json.dumps(
+            context.get("execution_report", {}), ensure_ascii=False, indent=2
+        ),
     )
 
     text = agents_complete(prompt=prompt, system=system, model=model)
+    return extract_json_block(text)
+
+
+def evaluate_with_codex(context, prompt_path, model):
+    system = "Eres un evaluador académico. Devuelve SOLO JSON válido según el esquema."
+    prompt_template = read_text(prompt_path)
+    if not prompt_template:
+        raise ValueError("Prompt template is empty")
+
+    prompt = prompt_template.format(
+        student_id=context["student_id"],
+        rubric_json=json.dumps(context["rubric"], ensure_ascii=False, indent=2),
+        assignment=context["assignment"],
+        materials=context["materials"],
+        notebook_text=context["notebook"]["text"],
+        execution_report=json.dumps(
+            context.get("execution_report", {}), ensure_ascii=False, indent=2
+        ),
+    )
+
+    text = codex_complete(prompt=prompt, system=system, model=model)
     return extract_json_block(text)

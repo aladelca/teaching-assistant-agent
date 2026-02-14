@@ -9,5 +9,6 @@ __all__ = [
     "utils",
     "notebook_runner",
     "syllabus",
+    "codex_cli_client",
     "review_ui",
 ]

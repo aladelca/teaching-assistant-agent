@@ -10,18 +10,60 @@
 - `inputs/`: insumos (sílabos, enunciados, etc.).
 - `outputs/`: resultados por ejecución.
 
-**Setup rápido (recomendado)**
+**Requisitos**
+- Python 3.10+
+- `uv` (https://docs.astral.sh/uv/getting-started/installation/)
+- Opcional para proveedor Codex auth: `codex` CLI
+
+**Setup rápido con uv (recomendado)**
 ```bash
-python3 -m venv .venv
-.venv/bin/pip install -e '.[dev]'
+./scripts/bootstrap.sh
+```
+Si quieres incluir extras desde el inicio:
+```bash
+./scripts/bootstrap.sh agents ui browser
+```
+
+**Setup manual con uv**
+```bash
+uv sync --extra dev --extra exec
+cp .env.example .env
 ```
 
 **Extras opcionales**
-- PDF texto: `.venv/bin/pip install '.[pdf]'`
-- OCR (PDF escaneado): `.venv/bin/pip install '.[ocr]'`
-- Ejecutar notebooks: `.venv/bin/pip install '.[exec]'`
-- Agents SDK: `.venv/bin/pip install '.[agents]'`
-- UI de revisión: `.venv/bin/pip install '.[ui]'`
+- PDF texto: `uv sync --extra pdf`
+- OCR (PDF escaneado): `uv sync --extra ocr`
+- Ejecutar notebooks: `uv sync --extra exec`
+- Agents SDK: `uv sync --extra agents`
+- UI de revisión: `uv sync --extra ui`
+- Browser Assist: `uv sync --extra browser`
+
+Puedes combinar extras en un solo comando, por ejemplo:
+```bash
+uv sync --extra dev --extra exec --extra agents --extra ui
+```
+
+**Configuración de entorno y secretos**
+1. Copia `.env.example` a `.env`.
+2. Completa las variables según tu proveedor:
+   - HTTP: `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_PAYLOAD_MODE`, `LLM_RESPONSE_PATH`
+   - Agents SDK: `OPENAI_API_KEY`
+   - Codex CLI (OpenAI Auth): `CODEX_MODEL` (opcional), `CODEX_REASONING_EFFORT` (opcional)
+3. Nunca subas `.env` al repositorio.
+
+Para GitHub Actions (CI/release), usa `Settings -> Secrets and variables -> Actions`:
+- `OPENAI_API_KEY` (si tus tests/workflows lo requieren)
+- `LLM_API_KEY` (si aplica)
+- `PYPI_API_TOKEN` (opcional, solo si publicarás en PyPI)
+
+Ver también:
+- `SECURITY.md`
+- `CODE_OF_CONDUCT.md`
+- `CONTRIBUTING.md`
+- `docs/open-source-readiness-plan.md`
+- `docs/release-checklist.md`
+- `docs/release-ownership.md`
+- `docs/operational-security.md`
 
 **Rúbrica (JSON)**
 ```json
@@ -40,7 +82,7 @@ python3 -m venv .venv
 
 **Ejecutar en modo mock (sin LLM)**
 ```bash
-python3 -m mvp_agent.cli \
+uv run python -m mvp_agent.cli \
   --notebook inputs/ejemplo.ipynb \
   --rubric examples/rubric.json \
   --assignment examples/assignment.txt \
@@ -63,7 +105,7 @@ export LLM_MODEL="tu-modelo"
 export LLM_PAYLOAD_MODE="messages"
 export LLM_RESPONSE_PATH="choices.0.message.content"
 
-python3 -m mvp_agent.cli \
+uv run python -m mvp_agent.cli \
   --llm-provider http \
   --notebook inputs/ejemplo.ipynb \
   --rubric examples/rubric.json \
@@ -75,13 +117,13 @@ python3 -m mvp_agent.cli \
 **Ejecutar con OpenAI Agents SDK**
 Requiere instalar el SDK oficial:
 ```bash
-.venv/bin/pip install '.[agents]'
+uv sync --extra agents
 ```
 
 Ejemplo:
 ```bash
 export OPENAI_API_KEY="tu_key"
-python3 -m mvp_agent.cli \
+uv run python -m mvp_agent.cli \
   --llm-provider agents \
   --model gpt-4.1 \
   --notebook inputs/ejemplo.ipynb \
@@ -91,9 +133,33 @@ python3 -m mvp_agent.cli \
   --student-id estudiante@correo.com
 ```
 
+**Ejecutar con Codex CLI (login OpenAI Auth, sin `OPENAI_API_KEY`)**
+Requisitos:
+- Tener `codex` instalado en tu máquina (`npm i -g @openai/codex`).
+- Haber iniciado sesión: `codex login`.
+
+Ejemplo:
+```bash
+export CODEX_MODEL="gpt-5"
+uv run python -m mvp_agent.cli \
+  --llm-provider codex \
+  --model gpt-5 \
+  --notebook inputs/ejemplo.ipynb \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --student-id estudiante@correo.com
+```
+
+Notas:
+- El proveedor `codex` usa `codex exec` internamente.
+- Si no pasas `--model`, intenta `CODEX_MODEL` y luego `LLM_MODEL`.
+- Por defecto fija `CODEX_REASONING_EFFORT=high` para compatibilidad.
+- `OPENAI_API_KEY` sigue funcionando para el proveedor `agents`.
+
 **Ejecutar notebook antes de evaluar**
 ```bash
-python3 -m mvp_agent.cli \
+uv run python -m mvp_agent.cli \
   --execute-notebook \
   --execution-timeout 120 \
   --notebook inputs/ejemplo.ipynb \
@@ -111,7 +177,7 @@ docker build -t mvp-notebook-exec:latest docker
 
 2. Ejecutar evaluación con Docker:
 ```bash
-python3 -m mvp_agent.cli \
+uv run python -m mvp_agent.cli \
   --execute-notebook \
   --exec-mode docker \
   --docker-image mvp-notebook-exec:latest \
@@ -124,11 +190,11 @@ python3 -m mvp_agent.cli \
 
 **Extraer rúbrica desde sílabo PDF**
 ```bash
-python3 -m mvp_agent.syllabus_cli \
+uv run python -m mvp_agent.syllabus_cli \
   --syllabus-pdf inputs/silabos/mi_silabo.pdf \
   --output inputs/rubric.json \
-  --llm-provider agents \
-  --model gpt-4.1 \
+  --llm-provider codex \
+  --model gpt-5 \
   --diagnostics outputs/syllabus_diagnostics.json
 ```
 
@@ -153,7 +219,7 @@ submissions/
 
 Ejecutar lote (mock):
 ```bash
-python3 -m mvp_agent.batch_cli \
+uv run python -m mvp_agent.batch_cli \
   --submissions-root submissions \
   --rubric examples/rubric.json \
   --assignment examples/assignment.txt \
@@ -168,13 +234,34 @@ Resultados de lote:
 
 **Tests**
 ```bash
-.venv/bin/python -m pytest
+uv run pytest
 ```
+
+**Lint + build de paquete**
+```bash
+uv run ruff check .
+uv run python -m build
+uv run twine check dist/*
+```
+
+**Release por tag**
+El workflow `release.yml` se ejecuta al crear tags `v*`:
+```bash
+git tag v0.1.0
+git push origin v0.1.0
+```
+Siempre publica artefactos en GitHub Release y publica a PyPI solo si existe `PYPI_API_TOKEN`.
 
 **UI simple de revisión**
 ```bash
-python3 -m mvp_agent.review_ui --outputs-dir outputs
+uv run python -m mvp_agent.review_ui --outputs-dir outputs
 ```
+Opcional: protege acceso con token:
+```bash
+export REVIEW_UI_TOKEN="cambia-este-token"
+uv run python -m mvp_agent.review_ui --outputs-dir outputs
+```
+Luego usa `?token=<valor>` en la URL o header `X-Review-Token`.
 
 **Browser Assist (sin credenciales)**
 Este modo NO maneja contraseñas. Abre el navegador, tú inicias sesión y el script
@@ -182,22 +269,25 @@ ayuda a pegar feedback o subir el CSV.
 
 Requiere Playwright:
 ```bash
-.venv/bin/pip install '.[browser]'
-.venv/bin/playwright install
+uv sync --extra browser
+uv run playwright install
 ```
 
 Ejemplo Blackboard (subir CSV):
 ```bash
-python3 -m mvp_agent.browser_assist \
+uv run python -m mvp_agent.browser_assist \
   --config examples/blackboard_steps.json \
   --output-dir outputs/estudiante@correo.com_20250211T000000Z
 ```
 
 Ejemplo Teams (pegar feedback):
 ```bash
-python3 -m mvp_agent.browser_assist \
+uv run python -m mvp_agent.browser_assist \
   --config examples/teams_steps.json \
   --output-dir outputs/estudiante@correo.com_20250211T000000Z
 ```
 
 Puedes ajustar los selectores en los archivos JSON según la UI real.
+
+## Licencia
+MIT (`LICENSE`).

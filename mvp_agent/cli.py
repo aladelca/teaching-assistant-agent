@@ -3,8 +3,13 @@ import csv
 import json
 import os
 
+from .evaluator import (
+    evaluate_with_agents,
+    evaluate_with_codex,
+    evaluate_with_llm,
+    mock_evaluate,
+)
 from .extractor import build_context_pack
-from .evaluator import evaluate_with_agents, evaluate_with_llm, mock_evaluate
 from .notebook_runner import execute_notebook, execute_notebook_docker
 from .render import render_instructor_feedback, render_student_feedback
 from .utils import ensure_dir, read_json, read_text, utc_timestamp
@@ -37,14 +42,20 @@ def parse_args():
     ap.add_argument("--materials", help="Ruta a material del curso (txt)")
     ap.add_argument("--student-id", required=True, help="ID o email del estudiante")
     ap.add_argument("--output-dir", default="outputs", help="Directorio de salida")
-    ap.add_argument("--gradebook-column", default="Final Score", help="Nombre de columna para Blackboard")
+    ap.add_argument(
+        "--gradebook-column", default="Final Score", help="Nombre de columna para Blackboard"
+    )
     ap.add_argument(
         "--llm-provider",
         default="mock",
-        choices=["mock", "http", "agents"],
+        choices=["mock", "http", "agents", "codex"],
         help="Proveedor LLM",
     )
-    ap.add_argument("--model", default=os.getenv("LLM_MODEL", ""), help="Modelo LLM")
+    ap.add_argument(
+        "--model",
+        default=os.getenv("CODEX_MODEL") or os.getenv("LLM_MODEL", ""),
+        help="Modelo LLM",
+    )
     ap.add_argument(
         "--prompt",
         default="mvp_agent/prompts/evaluator_prompt.txt",
@@ -52,7 +63,9 @@ def parse_args():
     )
     ap.add_argument("--temperature", type=float, default=0.2)
     ap.add_argument("--max-tokens", type=int, default=1200)
-    ap.add_argument("--execute-notebook", action="store_true", help="Ejecutar notebook antes de evaluar")
+    ap.add_argument(
+        "--execute-notebook", action="store_true", help="Ejecutar notebook antes de evaluar"
+    )
     ap.add_argument(
         "--exec-mode",
         choices=["local", "docker"],
@@ -60,8 +73,12 @@ def parse_args():
         help="Modo de ejecución del notebook",
     )
     ap.add_argument("--execution-timeout", type=int, default=120, help="Timeout de ejecución (seg)")
-    ap.add_argument("--allow-exec-errors", action="store_true", help="Permitir errores de ejecución")
-    ap.add_argument("--docker-image", default="mvp-notebook-exec:latest", help="Imagen Docker para ejecución")
+    ap.add_argument(
+        "--allow-exec-errors", action="store_true", help="Permitir errores de ejecución"
+    )
+    ap.add_argument(
+        "--docker-image", default="mvp-notebook-exec:latest", help="Imagen Docker para ejecución"
+    )
     ap.add_argument("--docker-cpus", default="2", help="CPUs asignados al contenedor")
     ap.add_argument("--docker-memory", default="2g", help="Memoria asignada al contenedor")
     ap.add_argument("--docker-network", default="none", help="Red del contenedor")
@@ -114,10 +131,19 @@ def run_pipeline(args) -> str:
         evaluation = mock_evaluate(context)
     elif args.llm_provider == "agents":
         if not args.model:
-            raise ValueError(
-                "Model is required for agents provider. Set --model or LLM_MODEL."
-            )
+            raise ValueError("Model is required for agents provider. Set --model or LLM_MODEL.")
         evaluation = evaluate_with_agents(
+            context=context,
+            prompt_path=args.prompt,
+            model=args.model,
+        )
+    elif args.llm_provider == "codex":
+        if not args.model:
+            raise ValueError(
+                "Model is required for codex provider. "
+                "Set --model, CODEX_MODEL, or LLM_MODEL."
+            )
+        evaluation = evaluate_with_codex(
             context=context,
             prompt_path=args.prompt,
             model=args.model,
@@ -151,7 +177,7 @@ def run_pipeline(args) -> str:
         rows=[
             {
                 "student_id": args.student_id,
-                args.gradebook_column: f"{evaluation.get('final_score',0):.2f}",
+                args.gradebook_column: f"{evaluation.get('final_score', 0):.2f}",
                 "scale_min": 0,
                 "scale_max": 20,
             }
