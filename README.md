@@ -85,6 +85,157 @@ Ver también:
 - `docs/release-checklist.md`
 - `docs/release-ownership.md`
 - `docs/operational-security.md`
+- `docs/openclaw-integration.md`
+
+**Personalización completa (prompts, flags y entorno)**
+
+Para ver todas las opciones en tiempo real:
+```bash
+mvp-agent --help
+mvp-agent-batch --help
+syllabus-extract --help
+review-ui --help
+browser-assist --help
+```
+
+**1) Personalizar prompt de corrección**
+
+Plantilla por defecto:
+- `mvp_agent/prompts/evaluator_prompt.txt`
+
+Variables disponibles en el prompt de corrección:
+- `{student_id}`
+- `{rubric_json}`
+- `{assignment}`
+- `{materials}`
+- `{notebook_text}`
+- `{execution_report}`
+
+Ejemplo con prompt custom:
+```bash
+mvp-agent \
+  --llm-provider codex \
+  --model gpt-5 \
+  --prompt /ruta/mi_evaluator_prompt.txt \
+  --notebook /ruta/entrega.ipynb \
+  --rubric /ruta/rubric.json \
+  --assignment /ruta/assignment.txt \
+  --materials /ruta/materials.txt \
+  --student-id alumno@correo.com
+```
+
+Si instalaste sin clonar, puedes descargar el prompt base y editarlo:
+```bash
+curl -fsSL https://raw.githubusercontent.com/aladelca/teaching-assistant-agent/master/mvp_agent/prompts/evaluator_prompt.txt \
+  -o ./mi_evaluator_prompt.txt
+```
+
+**2) Personalizar prompt de extracción de sílabo**
+
+Plantilla por defecto:
+- `mvp_agent/prompts/syllabus_prompt.txt`
+
+Variable disponible:
+- `{syllabus_text}`
+
+Ejemplo:
+```bash
+syllabus-extract \
+  --syllabus-pdf /ruta/silabo.pdf \
+  --output /ruta/rubric.json \
+  --llm-provider codex \
+  --model gpt-5 \
+  --prompt /ruta/mi_syllabus_prompt.txt
+```
+
+**3) Opciones configurables de `mvp-agent`**
+
+- `--notebook` ruta al `.ipynb` (requerido).
+- `--rubric` ruta a `rubric.json` (requerido).
+- `--assignment` ruta a enunciado `.txt` (opcional).
+- `--materials` ruta a material `.txt` (opcional).
+- `--student-id` identificador del alumno (requerido).
+- `--output-dir` carpeta base de salidas (default: `outputs`).
+- `--gradebook-column` nombre de columna en CSV (default: `Final Score`).
+- `--llm-provider` `mock|http|agents|codex`.
+- `--model` modelo LLM.
+- `--prompt` ruta de prompt custom de corrección.
+- `--temperature` solo HTTP (default: `0.2`).
+- `--max-tokens` solo HTTP (default: `1200`).
+- `--execute-notebook` ejecuta antes de evaluar.
+- `--exec-mode` `local|docker`.
+- `--execution-timeout` timeout de ejecución en segundos.
+- `--allow-exec-errors` permite errores de ejecución local.
+- `--docker-image` imagen para ejecución en Docker.
+- `--docker-cpus` CPUs para contenedor.
+- `--docker-memory` memoria para contenedor.
+- `--docker-network` red del contenedor.
+
+**4) Opciones configurables de `mvp-agent-batch`**
+
+- `--submissions-root` carpeta con un subdirectorio por alumno (requerido).
+- `--student-key-regex` regex para validar carpeta de alumno.
+- `--notebook-glob` patrón de búsqueda de notebooks por alumno.
+- `--rubric`, `--assignment`, `--materials`.
+- `--output-dir` carpeta de resultados de lote.
+- `--summary-csv` nombre de CSV consolidado.
+- `--gradebook-column` nombre de columna final.
+- `--llm-provider`, `--model`, `--prompt`, `--temperature`, `--max-tokens`.
+- `--execute-notebook`, `--exec-mode`, `--execution-timeout`, `--allow-exec-errors`.
+- `--docker-image`, `--docker-cpus`, `--docker-memory`, `--docker-network`.
+
+**5) Opciones configurables de `syllabus-extract`**
+
+- `--syllabus-pdf` PDF de entrada (requerido).
+- `--output` ruta de `rubric.json` (requerido).
+- `--llm-provider` `agents|http|codex`.
+- `--model` modelo LLM (requerido).
+- `--ocr-mode` `auto|off|force`.
+- `--max-pages` máximo de páginas para extracción.
+- `--min-chars` mínimo de caracteres antes de activar OCR.
+- `--prompt` prompt custom.
+- `--diagnostics` archivo JSON con diagnóstico de extracción.
+
+**6) Opciones configurables de `review-ui`**
+
+- `--outputs-dir` carpeta de corridas.
+- `--host` host bind (default `127.0.0.1`).
+- `--port` puerto (default `5000`).
+- `--auth-token-env` nombre de variable de entorno para token.
+
+**7) Opciones configurables de `browser-assist`**
+
+- `--config` JSON de pasos Playwright (requerido).
+- `--output-dir` carpeta de outputs de una corrida (requerido).
+- `--mode` `student|instructor`.
+- `--headless` ejecuta sin UI.
+- `--storage-state` sesión guardada de navegador.
+
+**8) Variables de entorno configurables**
+
+HTTP provider:
+- `LLM_API_URL`
+- `LLM_API_KEY`
+- `LLM_MODEL`
+- `LLM_PAYLOAD_MODE` (`messages` o `input`)
+- `LLM_RESPONSE_PATH`
+
+Agents SDK:
+- `OPENAI_API_KEY`
+
+Codex provider:
+- `CODEX_MODEL`
+- `CODEX_REASONING_EFFORT`
+
+UI:
+- `REVIEW_UI_TOKEN`
+
+**9) Variables del instalador directo (`scripts/install.sh`)**
+
+- `MVP_AGENT_PACKAGE_NAME` nombre del paquete (default `mvp-agent-correccion`).
+- `MVP_AGENT_REPO_URL` URL git origen.
+- `MVP_AGENT_EXTRAS` extras separados por coma (default `exec`).
+- `MVP_AGENT_INSTALL_CODEX` `1` para instalar `@openai/codex` vía npm.
 
 **Rúbrica (JSON)**
 ```json
