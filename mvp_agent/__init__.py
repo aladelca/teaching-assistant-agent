@@ -1,5 +1,7 @@
 __all__ = [
     "cli",
+    "batch",
+    "batch_cli",
     "extractor",
     "evaluator",
     "validator",

@@ -68,8 +68,7 @@ def parse_args():
     return ap.parse_args()
 
 
-def main():
-    args = parse_args()
+def run_pipeline(args) -> str:
     rubric = read_json(args.rubric)
     assignment_text = read_text(args.assignment)
     materials_text = read_text(args.materials)
@@ -174,6 +173,12 @@ def main():
             ],
         )
 
+    return out_dir
+
+
+def main():
+    args = parse_args()
+    out_dir = run_pipeline(args)
     print(f"OK: outputs in {out_dir}")
 
 
