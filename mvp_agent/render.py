@@ -18,9 +18,9 @@ def render_student_feedback(evaluation):
 
     lines = []
     lines.append("Resumen (3 líneas)")
-    lines.append(f"Qué está bien: {summary.get('good','')}")
-    lines.append(f"Qué falta: {summary.get('missing','')}")
-    lines.append(f"Prioridad #1: {summary.get('priority','')}")
+    lines.append(f"Qué está bien: {summary.get('good', '')}")
+    lines.append(f"Qué falta: {summary.get('missing', '')}")
+    lines.append(f"Prioridad #1: {summary.get('priority', '')}")
     lines.append("")
     lines.append("Mini-rúbrica")
     lines.append(_format_rubric_table(criteria))
@@ -45,10 +45,12 @@ def render_instructor_feedback(evaluation):
     lines.append("")
     lines.append("Detalle por criterio")
     for c in criteria:
-        lines.append(f"- {c.get('name','')}: {c.get('score',0):.2f}/20 (peso {c.get('weight',0):.2f})")
+        lines.append(
+            f"- {c.get('name', '')}: {c.get('score', 0):.2f}/20 (peso {c.get('weight', 0):.2f})"
+        )
         lines.append(f"  Evidencia: {c.get('evidence', [])}")
-        lines.append(f"  Rationale: {c.get('rationale','')}")
-        lines.append(f"  Mejora: {c.get('improvement','')}")
+        lines.append(f"  Rationale: {c.get('rationale', '')}")
+        lines.append(f"  Mejora: {c.get('improvement', '')}")
     flags = evaluation.get("flags", [])
     if flags:
         lines.append("")
@@ -56,4 +58,3 @@ def render_instructor_feedback(evaluation):
         for f in flags:
             lines.append(f"- {f.get('type')}: {f.get('detail')}")
     return "\n".join(lines).strip()
-

@@ -9,7 +9,9 @@ from .cli import run_pipeline
 from .utils import ensure_dir, utc_timestamp
 
 
-def discover_student_folders(submissions_root: str, student_key_regex: str = r"^[^/]+_[^/]+$") -> list[str]:
+def discover_student_folders(
+    submissions_root: str, student_key_regex: str = r"^[^/]+_[^/]+$"
+) -> list[str]:
     if not os.path.isdir(submissions_root):
         return []
     pat = re.compile(student_key_regex)

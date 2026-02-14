@@ -44,6 +44,11 @@ def test_validator_overrides_weights_and_scores():
 
 
 def test_validator_flags_long_quote():
+    long_quote = (
+        "uno dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince "
+        "dieciseis diecisiete dieciocho diecinueve veinte veintiuno veintidos veintitres "
+        "veinticuatro veinticinco veintiseis"
+    )
     evaluation = {
         "criteria": [
             {
@@ -53,7 +58,7 @@ def test_validator_flags_long_quote():
                 "evidence": [
                     {
                         "cell_ref": "C001",
-                        "quote": "uno dos tres cuatro cinco seis siete ocho nueve diez once doce trece catorce quince dieciseis diecisiete dieciocho diecinueve veinte veintiuno veintidos veintitres veinticuatro veinticinco veintiseis",
+                        "quote": long_quote,
                     }
                 ],
             }

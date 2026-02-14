@@ -1,8 +1,7 @@
-import json
 import os
-import tempfile
 import shutil
 import subprocess
+import tempfile
 
 
 def execute_notebook(
@@ -16,8 +15,7 @@ def execute_notebook(
         from nbclient import NotebookClient
     except ImportError as exc:
         raise ImportError(
-            "Dependencias faltantes para ejecutar notebooks. "
-            "Instala con: pip install '.[exec]'"
+            "Dependencias faltantes para ejecutar notebooks. Instala con: pip install '.[exec]'"
         ) from exc
 
     nb = nbformat.read(input_path, as_version=4)
@@ -78,7 +76,9 @@ def execute_notebook_docker(
     input_path = os.path.abspath(input_path)
     output_path = os.path.abspath(output_path)
     work_dir = os.path.dirname(input_path)
-    runner_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "docker", "execute_nb.py"))
+    runner_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "docker", "execute_nb.py")
+    )
 
     input_name = os.path.basename(input_path)
     output_name = os.path.basename(output_path)

@@ -55,9 +55,7 @@ def http_complete(prompt, system, model, temperature=0.2, max_tokens=1200):
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
 
-    req = urllib.request.Request(
-        api_url, data=json.dumps(payload).encode("utf-8"), headers=headers
-    )
+    req = urllib.request.Request(api_url, data=json.dumps(payload).encode("utf-8"), headers=headers)
     with urllib.request.urlopen(req, timeout=120) as resp:
         body = resp.read().decode("utf-8")
     data = json.loads(body)
@@ -65,4 +63,3 @@ def http_complete(prompt, system, model, temperature=0.2, max_tokens=1200):
     if text is None:
         raise ValueError("LLM response path not found. Set LLM_RESPONSE_PATH.")
     return text
-

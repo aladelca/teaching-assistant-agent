@@ -39,4 +39,3 @@ def extract_json_block(text):
         return json.loads(json_str)
     except json.JSONDecodeError as exc:
         raise ValueError(f"Invalid JSON: {exc}") from exc
-

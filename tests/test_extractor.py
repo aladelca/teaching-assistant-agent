@@ -1,4 +1,4 @@
-from mvp_agent.extractor import load_notebook, extract_notebook_cells, build_notebook_text
+from mvp_agent.extractor import build_notebook_text, extract_notebook_cells, load_notebook
 
 
 def test_extract_notebook_cells():

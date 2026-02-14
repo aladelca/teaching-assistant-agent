@@ -2,7 +2,7 @@ import pytest
 
 
 def test_execute_notebook(tmp_path):
-    nbclient = pytest.importorskip("nbclient")
+    pytest.importorskip("nbclient")
     from mvp_agent.notebook_runner import execute_notebook
 
     out_path = tmp_path / "executed.ipynb"

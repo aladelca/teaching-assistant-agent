@@ -49,10 +49,7 @@ def validate_evaluation(evaluation, context):
 
     if rubric_weights and llm_weights:
         if len(rubric_weights) == len(llm_weights):
-            diffs = [
-                abs(rubric_weights[i] - llm_weights[i])
-                for i in range(len(rubric_weights))
-            ]
+            diffs = [abs(rubric_weights[i] - llm_weights[i]) for i in range(len(rubric_weights))]
             if any(d > 0.05 for d in diffs):
                 issues.append("LLM weights differ from rubric weights. Overriding with rubric.")
         else:
@@ -84,13 +81,9 @@ def validate_evaluation(evaluation, context):
         for ev in evidence:
             quote = ev.get("quote", "")
             if quote and not _find_text_evidence(quote, notebook_text):
-                issues.append(
-                    f"Evidence quote not found in notebook for {crit.get('name', idx)}."
-                )
+                issues.append(f"Evidence quote not found in notebook for {crit.get('name', idx)}.")
             if quote and len(quote.split()) > 25:
-                issues.append(
-                    f"Evidence quote too long for {crit.get('name', idx)}."
-                )
+                issues.append(f"Evidence quote too long for {crit.get('name', idx)}.")
 
     evaluation["final_score"] = round(total_score, 2)
     evaluation["scale_min"] = 0

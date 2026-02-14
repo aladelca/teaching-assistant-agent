@@ -1,6 +1,3 @@
-import os
-
-
 def agents_complete(prompt, system, model):
     try:
         from agents import Agent, Runner

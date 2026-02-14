@@ -1,7 +1,6 @@
 import argparse
 import json
 import os
-import sys
 
 from .utils import read_text
 
@@ -19,9 +18,7 @@ def _load_json(path):
 
 def _load_outputs(output_dir, mode):
     feedback_student = read_text(os.path.join(output_dir, "feedback_student.txt"))
-    feedback_instructor = read_text(
-        os.path.join(output_dir, "feedback_instructor.txt")
-    )
+    feedback_instructor = read_text(os.path.join(output_dir, "feedback_instructor.txt"))
     evaluation_path = os.path.join(output_dir, "evaluation.json")
     evaluation = _load_json(evaluation_path)
 
@@ -93,7 +90,8 @@ def main():
         from playwright.sync_api import sync_playwright
     except ImportError as exc:
         raise SystemExit(
-            "Playwright no está instalado. Instala con: pip install playwright && playwright install"
+            "Playwright no está instalado. "
+            "Instala con: pip install playwright && playwright install"
         ) from exc
 
     args = parse_args()
@@ -119,4 +117,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -3,8 +3,7 @@ import json
 import os
 from datetime import datetime
 
-from flask import Flask, redirect, render_template_string, request, url_for
-
+from flask import Flask, abort, redirect, render_template_string, request, url_for
 
 TEMPLATE_INDEX = """
 <!doctype html>
@@ -79,8 +78,17 @@ def _read_json(path):
         return json.load(f)
 
 
-def create_app(outputs_dir):
+def create_app(outputs_dir, auth_token=None):
     app = Flask(__name__)
+
+    @app.before_request
+    def enforce_token():
+        if not auth_token:
+            return None
+        provided = request.headers.get("X-Review-Token") or request.args.get("token")
+        if provided != auth_token:
+            abort(401)
+        return None
 
     @app.route("/")
     def index():
@@ -102,9 +110,7 @@ def create_app(outputs_dir):
         run_path = os.path.join(outputs_dir, run_id)
         evaluation = _read_json(os.path.join(run_path, "evaluation.json"))
         feedback_student = _read_text(os.path.join(run_path, "feedback_student.txt"))
-        feedback_instructor = _read_text(
-            os.path.join(run_path, "feedback_instructor.txt")
-        )
+        feedback_instructor = _read_text(os.path.join(run_path, "feedback_instructor.txt"))
         return render_template_string(
             TEMPLATE_REVIEW,
             run_id=run_id,
@@ -135,9 +141,15 @@ def main():
     ap.add_argument("--outputs-dir", default="outputs", help="Directorio de salidas")
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=5000)
+    ap.add_argument(
+        "--auth-token-env",
+        default="REVIEW_UI_TOKEN",
+        help="Variable de entorno con token de acceso opcional (vacío para desactivar)",
+    )
     args = ap.parse_args()
 
-    app = create_app(args.outputs_dir)
+    auth_token = os.getenv(args.auth_token_env) if args.auth_token_env else None
+    app = create_app(args.outputs_dir, auth_token=auth_token)
     app.run(host=args.host, port=args.port, debug=False)
 
 

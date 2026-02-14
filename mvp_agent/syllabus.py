@@ -1,4 +1,3 @@
-import os
 import shutil
 import subprocess
 
@@ -34,8 +33,8 @@ def _extract_text_pdftotext(pdf_path):
 
 def _extract_text_ocr(pdf_path, max_pages=5):
     try:
-        from pdf2image import convert_from_path
         import pytesseract
+        from pdf2image import convert_from_path
     except ImportError:
         return ""
     images = convert_from_path(pdf_path, dpi=200, first_page=1, last_page=max_pages)
