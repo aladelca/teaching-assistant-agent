@@ -141,6 +141,31 @@ python3 -m mvp_agent.syllabus_cli \
 - `gradebook_updates.csv`
 - `flags.csv` (si aplica)
 
+## Corrección por lote (carpetas `apellidos_nombres`)
+Estructura esperada:
+```bash
+submissions/
+  perez_juan/
+    entrega.ipynb
+  garcia_maria/
+    notebook.ipynb
+```
+
+Ejecutar lote (mock):
+```bash
+python3 -m mvp_agent.batch_cli \
+  --submissions-root submissions \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --output-dir outputs_batch
+```
+
+Resultados de lote:
+- `outputs_batch/gradebook_summary.csv` (resumen consolidado)
+- `outputs_batch/batch_report.json` (métricas de ejecución)
+- carpetas individuales por alumno con evidencias completas (igual que `mvp_agent.cli`)
+
 **Tests**
 ```bash
 .venv/bin/python -m pytest
