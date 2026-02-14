@@ -15,6 +15,27 @@
 - `uv` (https://docs.astral.sh/uv/getting-started/installation/)
 - Opcional para proveedor Codex auth: `codex` CLI
 
+**Instalación directa sin clonar (tipo `curl | bash`)**
+```bash
+curl -fsSL https://raw.githubusercontent.com/aladelca/teaching-assistant-agent/master/scripts/install.sh | bash
+```
+
+Opcional:
+- Instalar extras adicionales: `MVP_AGENT_EXTRAS='exec,agents,ui,browser' ...`
+- Instalar también Codex CLI: `MVP_AGENT_INSTALL_CODEX=1 ...`
+
+Ejemplo:
+```bash
+MVP_AGENT_EXTRAS='exec,agents' MVP_AGENT_INSTALL_CODEX=1 \
+curl -fsSL https://raw.githubusercontent.com/aladelca/teaching-assistant-agent/master/scripts/install.sh | bash
+```
+
+Después de instalar:
+```bash
+mvp-agent --help
+mvp-agent-batch --help
+```
+
 **Setup rápido con uv (recomendado)**
 ```bash
 ./scripts/bootstrap.sh
