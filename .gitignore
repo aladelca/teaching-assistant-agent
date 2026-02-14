@@ -4,5 +4,10 @@ __pycache__/
 .ruff_cache/
 .venv/
 outputs/
-.env
+.env*
+!.env.example
+build/
+dist/
+*.egg-info/
+outputs_batch/
 *.log
