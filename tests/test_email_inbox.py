@@ -1,3 +1,4 @@
+import zipfile
 from pathlib import Path
 
 from mvp_agent.email_inbox import (
@@ -26,6 +27,20 @@ def test_prepare_submissions_root_from_notebook_attachment(tmp_path):
     student_dir = submissions / "perez_juan"
     assert student_dir.exists()
     assert any(p.suffix == ".ipynb" for p in student_dir.iterdir())
+
+
+def test_prepare_submissions_root_normalizes_zip_root_notebook(tmp_path):
+    zip_path = tmp_path / "entregas.zip"
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        zf.writestr(
+            "perez_juan.ipynb",
+            '{"cells": [], "metadata": {}, "nbformat": 4, "nbformat_minor": 5}',
+        )
+
+    submissions = prepare_submissions_root([zip_path], tmp_path / "work_zip")
+    student_dir = submissions / "perez_juan"
+    assert student_dir.exists()
+    assert (student_dir / "perez_juan.ipynb").exists()
 
 
 def test_compose_result_reply_attaches_csv(tmp_path):

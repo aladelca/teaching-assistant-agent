@@ -109,6 +109,17 @@ def _build_student_key_from_notebook(path: Path) -> str:
     return f"inbox_{stem or 'student'}"
 
 
+def _normalize_notebooks_in_root(submissions: Path) -> None:
+    for nb_path in submissions.glob("*.ipynb"):
+        student_key = _build_student_key_from_notebook(nb_path)
+        student_dir = submissions / student_key
+        student_dir.mkdir(parents=True, exist_ok=True)
+        target = student_dir / nb_path.name
+        if target != nb_path:
+            target.write_bytes(nb_path.read_bytes())
+            nb_path.unlink(missing_ok=True)
+
+
 def prepare_submissions_root(attachments: Iterable[Path], work_dir: Path) -> Path:
     submissions = work_dir / "submissions"
     submissions.mkdir(parents=True, exist_ok=True)
@@ -124,6 +135,7 @@ def prepare_submissions_root(attachments: Iterable[Path], work_dir: Path) -> Pat
             student_dir.mkdir(parents=True, exist_ok=True)
             (student_dir / attachment.name).write_bytes(attachment.read_bytes())
 
+    _normalize_notebooks_in_root(submissions)
     return submissions
 
 
