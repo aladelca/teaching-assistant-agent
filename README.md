@@ -169,12 +169,25 @@ Resultados de lote:
 ## Procesamiento por correo (IMAP + SMTP)
 Flujo soportado:
 1. Lee correos no leídos del buzón.
-2. Descarga adjuntos (`.zip` y/o `.ipynb`).
-3. Ejecuta corrección por lote.
-4. Responde al remitente con `gradebook_summary.csv` adjunto.
+2. Descarga adjuntos.
+3. Detecta insumos opcionales por nombre de archivo:
+   - `rubric.json` (sobrescribe rúbrica por defecto)
+   - `assignment.txt` o `enunciado.txt` (sobrescribe enunciado)
+   - `materials.txt` o `materiales.txt` (sobrescribe materiales)
+   - `students.csv` / `roster.csv` / `alumnos.csv` (mapeo alumno↔archivo)
+4. Procesa entregas en `.zip` y/o `.ipynb`.
+5. Ejecuta corrección por lote.
+6. Responde al remitente con `gradebook_summary.csv` adjunto.
 
 Sugerencia de asunto para override de enunciado:
-- `Entrega parcial [assignment:examples/assignment.txt]`
+- `Entrega parcial [assignment:ruta/o/url/del/enunciado]`
+
+Formato recomendado para roster CSV:
+```csv
+student_id,student_name,expected_filename
+2026001,Juan Perez,perez_juan_tarea1.ipynb
+2026002,Maria Garcia,garcia_maria_tarea1.ipynb
+```
 
 Variables de entorno mínimas:
 - `EMAIL_IMAP_HOST`

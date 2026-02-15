@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import email
 import email.policy
 import imaplib
@@ -19,6 +20,10 @@ from .utils import ensure_dir, utc_timestamp
 
 DEFAULT_SUBJECT_ASSIGNMENT_RE = re.compile(r"\[assignment:(?P<name>[^\]]+)\]", re.IGNORECASE)
 DEFAULT_STUDENT_FOLDER_RE = re.compile(r"^[^/]+_[^/]+$")
+
+ROSTER_ID_KEYS = {"student_id", "id", "matricula", "codigo", "codigo_alumno"}
+ROSTER_NAME_KEYS = {"student_name", "name", "nombre", "alumno"}
+ROSTER_FILE_KEYS = {"expected_filename", "filename", "file", "notebook", "archivo"}
 
 
 @dataclass
@@ -120,6 +125,41 @@ def _normalize_notebooks_in_root(submissions: Path) -> None:
             nb_path.unlink(missing_ok=True)
 
 
+def select_config_and_submission_attachments(
+    attachments: Iterable[Path],
+) -> dict[str, Path | list[Path] | None]:
+    rubric: Path | None = None
+    assignment: Path | None = None
+    materials: Path | None = None
+    roster: Path | None = None
+    submissions: list[Path] = []
+
+    for attachment in attachments:
+        name = attachment.name.lower()
+        if name == "rubric.json":
+            rubric = attachment
+            continue
+        if name in {"assignment.txt", "enunciado.txt"}:
+            assignment = attachment
+            continue
+        if name in {"materials.txt", "materiales.txt"}:
+            materials = attachment
+            continue
+        if name in {"students.csv", "roster.csv", "alumnos.csv"}:
+            roster = attachment
+            continue
+        if attachment.suffix.lower() in {".zip", ".ipynb"}:
+            submissions.append(attachment)
+
+    return {
+        "rubric": rubric,
+        "assignment": assignment,
+        "materials": materials,
+        "roster": roster,
+        "submissions": submissions,
+    }
+
+
 def prepare_submissions_root(attachments: Iterable[Path], work_dir: Path) -> Path:
     submissions = work_dir / "submissions"
     submissions.mkdir(parents=True, exist_ok=True)
@@ -139,18 +179,105 @@ def prepare_submissions_root(attachments: Iterable[Path], work_dir: Path) -> Pat
     return submissions
 
 
+def build_notebook_student_index(submissions_root: Path) -> dict[str, str]:
+    index: dict[str, str] = {}
+    for nb in submissions_root.rglob("*.ipynb"):
+        try:
+            rel = nb.relative_to(submissions_root)
+            student_key = rel.parts[0]
+        except (ValueError, IndexError):
+            continue
+        index[nb.name.lower()] = student_key
+    return index
+
+
+def _normalize_row_keys(row: dict) -> dict[str, str]:
+    return {str(k).strip().lower(): str(v or "").strip() for k, v in row.items()}
+
+
+def load_roster_csv(roster_path: Path) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    with open(roster_path, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        for raw_row in reader:
+            row = _normalize_row_keys(raw_row)
+            sid = next((row[k] for k in ROSTER_ID_KEYS if k in row and row[k]), "")
+            sname = next((row[k] for k in ROSTER_NAME_KEYS if k in row and row[k]), "")
+            expected = next((row[k] for k in ROSTER_FILE_KEYS if k in row and row[k]), "")
+            if sid or sname or expected:
+                rows.append(
+                    {
+                        "student_id": sid,
+                        "student_name": sname,
+                        "expected_filename": os.path.basename(expected).lower(),
+                    }
+                )
+    return rows
+
+
+def apply_roster_mapping(
+    summary_csv: Path,
+    roster_rows: list[dict[str, str]],
+    notebook_index: dict[str, str],
+) -> None:
+    if not summary_csv.exists() or not roster_rows:
+        return
+
+    roster_by_student_key: dict[str, dict[str, str]] = {}
+    for row in roster_rows:
+        expected = row.get("expected_filename", "").lower()
+        if not expected:
+            continue
+        student_key = notebook_index.get(expected)
+        if not student_key:
+            continue
+        roster_by_student_key[student_key] = row
+
+    with open(summary_csv, "r", encoding="utf-8", newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = list(reader.fieldnames or [])
+        rows = list(reader)
+
+    extra_fields = ["student_name", "expected_filename", "match_source"]
+    for f in extra_fields:
+        if f not in fieldnames:
+            fieldnames.append(f)
+
+    for row in rows:
+        student_key = str(row.get("student_key", ""))
+        mapped = roster_by_student_key.get(student_key)
+        if not mapped:
+            row.setdefault("student_name", "")
+            row.setdefault("expected_filename", "")
+            row["match_source"] = "unmatched"
+            continue
+
+        if mapped.get("student_id"):
+            row["student_id"] = mapped["student_id"]
+        row["student_name"] = mapped.get("student_name", "")
+        row["expected_filename"] = mapped.get("expected_filename", "")
+        row["match_source"] = "expected_filename"
+
+    with open(summary_csv, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
 def build_batch_args(
     submissions_root: Path,
     batch_cfg: BatchConfig,
     assignment_override: str | None = None,
+    rubric_override: str | None = None,
+    materials_override: str | None = None,
 ) -> Namespace:
     return Namespace(
         submissions_root=str(submissions_root),
         student_key_regex=batch_cfg.student_key_regex,
         notebook_glob=batch_cfg.notebook_glob,
-        rubric=batch_cfg.rubric,
+        rubric=rubric_override or batch_cfg.rubric,
         assignment=assignment_override or batch_cfg.assignment,
-        materials=batch_cfg.materials,
+        materials=materials_override or batch_cfg.materials,
         output_dir=batch_cfg.output_dir,
         summary_csv=batch_cfg.summary_csv,
         gradebook_column=batch_cfg.gradebook_column,
@@ -223,18 +350,35 @@ def process_single_message(
     run_base = Path(batch_cfg.output_dir) / f"email_{utc_timestamp()}"
     run_base.mkdir(parents=True, exist_ok=True)
 
-    attachments = extract_attachments_to_dir(raw_msg, run_base / "attachments")
-    submissions_root = prepare_submissions_root(attachments, run_base)
+    all_attachments = extract_attachments_to_dir(raw_msg, run_base / "attachments")
+    selected = select_config_and_submission_attachments(all_attachments)
+
+    submission_attachments = selected["submissions"] or []
+    submissions_root = prepare_submissions_root(submission_attachments, run_base)
+    notebook_index = build_notebook_student_index(submissions_root)
+
     assignment_override = parse_assignment_from_subject(subject)
+    if selected["assignment"]:
+        assignment_override = str(selected["assignment"])
+
+    rubric_override = str(selected["rubric"]) if selected["rubric"] else None
+    materials_override = str(selected["materials"]) if selected["materials"] else None
 
     batch_args = build_batch_args(
         submissions_root,
         batch_cfg,
         assignment_override=assignment_override,
+        rubric_override=rubric_override,
+        materials_override=materials_override,
     )
     report = run_batch(batch_args)
 
     csv_path = Path(report.get("summary_csv", "")) if report.get("summary_csv") else None
+
+    if selected["roster"] and csv_path:
+        roster_rows = load_roster_csv(Path(selected["roster"]))
+        apply_roster_mapping(csv_path, roster_rows, notebook_index)
+
     return report, csv_path, sender
 
 
@@ -262,11 +406,7 @@ def poll_and_process_once(mail_cfg: MailConfig, batch_cfg: BatchConfig) -> dict:
                 continue
 
             parsed = email.message_from_bytes(raw_data[0][1], policy=email.policy.default)
-            report, csv_path, sender = process_single_message(
-                parsed,
-                batch_cfg,
-                mail_cfg.smtp_user,
-            )
+            report, csv_path, sender = process_single_message(parsed, batch_cfg, mail_cfg.smtp_user)
             reply = compose_result_reply(
                 mail_cfg.smtp_user,
                 sender,
