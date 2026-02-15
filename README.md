@@ -405,6 +405,67 @@ Resultados de lote:
 - `outputs_batch/batch_report.json` (métricas de ejecución)
 - carpetas individuales por alumno con evidencias completas (igual que `mvp_agent.cli`)
 
+## Procesamiento por correo (IMAP + SMTP)
+Flujo soportado:
+1. Lee correos no leídos del buzón.
+2. Descarga adjuntos.
+3. Detecta insumos opcionales por nombre de archivo:
+   - `rubric.json` (sobrescribe rúbrica por defecto)
+   - `assignment.txt` o `enunciado.txt` (sobrescribe enunciado)
+   - `materials.txt` o `materiales.txt` (sobrescribe materiales)
+   - `students.csv` / `roster.csv` / `alumnos.csv` (mapeo alumno↔archivo)
+4. Procesa entregas en `.zip` y/o `.ipynb`.
+5. Ejecuta corrección por lote.
+6. Responde al remitente con `gradebook_summary.csv` adjunto.
+
+Sugerencia de asunto para override de enunciado:
+- `Entrega parcial [assignment:ruta/o/url/del/enunciado]`
+
+Formato recomendado para roster CSV:
+```csv
+student_id,student_name,expected_filename
+2026001,Juan Perez,perez_juan_tarea1.ipynb
+2026002,Maria Garcia,garcia_maria_tarea1.ipynb
+```
+
+Variables de entorno mínimas:
+- `EMAIL_IMAP_HOST`
+- `EMAIL_IMAP_USER`
+- `EMAIL_IMAP_PASSWORD`
+- `EMAIL_SMTP_HOST`
+- `EMAIL_SMTP_PORT` (default 465)
+- `EMAIL_SMTP_USER`
+- `EMAIL_SMTP_PASSWORD`
+
+Ejemplo:
+```bash
+export EMAIL_IMAP_HOST="imap.gmail.com"
+export EMAIL_IMAP_USER="agent@example.com"
+export EMAIL_IMAP_PASSWORD="app_password"
+export EMAIL_SMTP_HOST="smtp.gmail.com"
+export EMAIL_SMTP_PORT="465"
+export EMAIL_SMTP_USER="agent@example.com"
+export EMAIL_SMTP_PASSWORD="app_password"
+
+python3 -m mvp_agent.email_cli \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --output-dir outputs_email
+```
+
+Para habilitar parseo del texto del correo con LLM:
+```bash
+python3 -m mvp_agent.email_cli \
+  --llm-provider http \
+  --model tu-modelo \
+  --email-body-llm-parse \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --output-dir outputs_email
+```
+
 **Tests**
 ```bash
 uv run pytest

@@ -35,6 +35,7 @@ ui = ["flask>=3.0"]
 [project.scripts]
 mvp-agent = "mvp_agent.cli:main"
 mvp-agent-batch = "mvp_agent.batch_cli:main"
+mvp-agent-email = "mvp_agent.email_cli:main"
 browser-assist = "mvp_agent.browser_assist:main"
 syllabus-extract = "mvp_agent.syllabus_cli:main"
 review-ui = "mvp_agent.review_ui:main"
