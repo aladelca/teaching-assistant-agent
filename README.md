@@ -466,6 +466,16 @@ python3 -m mvp_agent.email_cli \
   --output-dir outputs_email
 ```
 
+### GitHub Actions (programado)
+Incluye workflow en `.github/workflows/email-grading.yml` para ejecución cada 10 minutos
+(y `workflow_dispatch` manual).
+
+Secrets requeridos en el repositorio:
+- `EMAIL_IMAP_HOST`, `EMAIL_IMAP_USER`, `EMAIL_IMAP_PASSWORD`
+- `EMAIL_IMAP_MAILBOX` (opcional; default `INBOX`)
+- `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`, `EMAIL_SMTP_USER`, `EMAIL_SMTP_PASSWORD`
+- `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`, `LLM_PAYLOAD_MODE`, `LLM_RESPONSE_PATH` (opcional según provider)
+
 **Tests**
 ```bash
 uv run pytest

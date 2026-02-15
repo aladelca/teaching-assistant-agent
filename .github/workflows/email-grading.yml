@@ -1,0 +1,64 @@
+name: Email Grading Inbox
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "*/10 * * * *"
+
+concurrency:
+  group: email-grading-inbox
+  cancel-in-progress: false
+
+jobs:
+  grade-inbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install project
+        run: uv sync --extra dev
+
+      - name: Process inbox
+        env:
+          EMAIL_IMAP_HOST: ${{ secrets.EMAIL_IMAP_HOST }}
+          EMAIL_IMAP_USER: ${{ secrets.EMAIL_IMAP_USER }}
+          EMAIL_IMAP_PASSWORD: ${{ secrets.EMAIL_IMAP_PASSWORD }}
+          EMAIL_IMAP_MAILBOX: ${{ secrets.EMAIL_IMAP_MAILBOX }}
+          EMAIL_SMTP_HOST: ${{ secrets.EMAIL_SMTP_HOST }}
+          EMAIL_SMTP_PORT: ${{ secrets.EMAIL_SMTP_PORT }}
+          EMAIL_SMTP_USER: ${{ secrets.EMAIL_SMTP_USER }}
+          EMAIL_SMTP_PASSWORD: ${{ secrets.EMAIL_SMTP_PASSWORD }}
+          LLM_API_URL: ${{ secrets.LLM_API_URL }}
+          LLM_API_KEY: ${{ secrets.LLM_API_KEY }}
+          LLM_MODEL: ${{ secrets.LLM_MODEL }}
+          LLM_PAYLOAD_MODE: ${{ secrets.LLM_PAYLOAD_MODE }}
+          LLM_RESPONSE_PATH: ${{ secrets.LLM_RESPONSE_PATH }}
+        run: |
+          uv run python -m mvp_agent.email_cli \
+            --mailbox "${EMAIL_IMAP_MAILBOX:-INBOX}" \
+            --llm-provider http \
+            --model "${LLM_MODEL}" \
+            --email-body-llm-parse \
+            --rubric examples/rubric.json \
+            --assignment examples/assignment.txt \
+            --materials examples/materials.txt \
+            --output-dir outputs_email
+
+      - name: Upload outputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-grading-outputs
+          path: outputs_email
+          if-no-files-found: ignore
