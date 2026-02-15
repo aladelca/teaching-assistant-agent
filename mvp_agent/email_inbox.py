@@ -4,6 +4,7 @@ import csv
 import email
 import email.policy
 import imaplib
+import json
 import os
 import re
 import smtplib
@@ -15,7 +16,9 @@ from email.utils import parseaddr
 from pathlib import Path
 from typing import Iterable
 
+from .agents_sdk_client import agents_complete
 from .batch import run_batch
+from .llm_client import http_complete
 from .utils import ensure_dir, utc_timestamp
 
 DEFAULT_SUBJECT_ASSIGNMENT_RE = re.compile(r"\[assignment:(?P<name>[^\]]+)\]", re.IGNORECASE)
@@ -49,6 +52,7 @@ class BatchConfig:
     docker_cpus: str = "2"
     docker_memory: str = "2g"
     docker_network: str = "none"
+    email_body_llm_parse: bool = False
 
 
 @dataclass
@@ -70,6 +74,74 @@ def parse_assignment_from_subject(subject: str) -> str | None:
     if not match:
         return None
     return match.group("name").strip()
+
+
+def extract_message_text(raw_msg: email.message.Message) -> str:
+    if raw_msg.is_multipart():
+        parts: list[str] = []
+        for part in raw_msg.walk():
+            ctype = part.get_content_type()
+            if ctype == "text/plain" and part.get_content_disposition() != "attachment":
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or "utf-8"
+                    parts.append(payload.decode(charset, errors="replace"))
+        return "\n".join(parts).strip()
+
+    payload = raw_msg.get_payload(decode=True)
+    if not payload:
+        return ""
+    charset = raw_msg.get_content_charset() or "utf-8"
+    return payload.decode(charset, errors="replace").strip()
+
+
+def _json_from_llm_text(text: str) -> dict:
+    raw = text.strip()
+    raw = re.sub(r"^```(?:json)?", "", raw).strip()
+    raw = re.sub(r"```$", "", raw).strip()
+    return json.loads(raw)
+
+
+def llm_parse_email_body(body_text: str, batch_cfg: BatchConfig) -> dict:
+    if not batch_cfg.email_body_llm_parse or not body_text.strip():
+        return {}
+
+    if batch_cfg.llm_provider == "mock":
+        return {}
+
+    if not batch_cfg.model:
+        return {}
+
+    system = (
+        "You parse grading instruction emails. Return ONLY valid JSON with optional keys: "
+        "rubric_path, assignment_path, materials_path, gradebook_column, student_key_regex, "
+        "notebook_glob, requires_confirmation, notes."
+    )
+    prompt = (
+        "Email body to parse:\n"
+        f"{body_text}\n\n"
+        "Return JSON only. Do not include markdown fences."
+    )
+
+    if batch_cfg.llm_provider == "agents":
+        out = agents_complete(prompt=prompt, system=system, model=batch_cfg.model)
+    else:
+        out = http_complete(
+            prompt=prompt,
+            system=system,
+            model=batch_cfg.model,
+            temperature=batch_cfg.temperature,
+            max_tokens=min(batch_cfg.max_tokens, 500),
+        )
+
+    try:
+        parsed = _json_from_llm_text(str(out))
+    except Exception:  # noqa: BLE001
+        return {}
+
+    if not isinstance(parsed, dict):
+        return {}
+    return parsed
 
 
 def _safe_filename(name: str) -> str:
@@ -353,20 +425,39 @@ def process_single_message(
     all_attachments = extract_attachments_to_dir(raw_msg, run_base / "attachments")
     selected = select_config_and_submission_attachments(all_attachments)
 
+    body_text = extract_message_text(raw_msg)
+    body_context = llm_parse_email_body(body_text, batch_cfg)
+    with open(run_base / "email_context.json", "w", encoding="utf-8") as f:
+        json.dump(body_context, f, ensure_ascii=False, indent=2)
+
     submission_attachments = selected["submissions"] or []
     submissions_root = prepare_submissions_root(submission_attachments, run_base)
     notebook_index = build_notebook_student_index(submissions_root)
 
     assignment_override = parse_assignment_from_subject(subject)
+    if not assignment_override:
+        assignment_override = str(body_context.get("assignment_path", "") or "") or None
     if selected["assignment"]:
         assignment_override = str(selected["assignment"])
 
-    rubric_override = str(selected["rubric"]) if selected["rubric"] else None
-    materials_override = str(selected["materials"]) if selected["materials"] else None
+    rubric_override = str(body_context.get("rubric_path", "") or "") or None
+    materials_override = str(body_context.get("materials_path", "") or "") or None
+    if selected["rubric"]:
+        rubric_override = str(selected["rubric"])
+    if selected["materials"]:
+        materials_override = str(selected["materials"])
+
+    batch_cfg_local = BatchConfig(**{**batch_cfg.__dict__})
+    if body_context.get("gradebook_column"):
+        batch_cfg_local.gradebook_column = str(body_context["gradebook_column"])
+    if body_context.get("student_key_regex"):
+        batch_cfg_local.student_key_regex = str(body_context["student_key_regex"])
+    if body_context.get("notebook_glob"):
+        batch_cfg_local.notebook_glob = str(body_context["notebook_glob"])
 
     batch_args = build_batch_args(
         submissions_root,
-        batch_cfg,
+        batch_cfg_local,
         assignment_override=assignment_override,
         rubric_override=rubric_override,
         materials_override=materials_override,

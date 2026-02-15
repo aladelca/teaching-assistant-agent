@@ -215,6 +215,18 @@ python3 -m mvp_agent.email_cli \
   --output-dir outputs_email
 ```
 
+Para habilitar parseo del texto del correo con LLM:
+```bash
+python3 -m mvp_agent.email_cli \
+  --llm-provider http \
+  --model tu-modelo \
+  --email-body-llm-parse \
+  --rubric examples/rubric.json \
+  --assignment examples/assignment.txt \
+  --materials examples/materials.txt \
+  --output-dir outputs_email
+```
+
 **Tests**
 ```bash
 .venv/bin/python -m pytest

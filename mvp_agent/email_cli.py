@@ -46,6 +46,11 @@ def parse_args():
     ap.add_argument("--docker-cpus", default="2")
     ap.add_argument("--docker-memory", default="2g")
     ap.add_argument("--docker-network", default="none")
+    ap.add_argument(
+        "--email-body-llm-parse",
+        action="store_true",
+        help="Usar LLM para extraer instrucciones del cuerpo del correo",
+    )
 
     return ap.parse_args()
 
@@ -101,6 +106,7 @@ def main():
         docker_cpus=args.docker_cpus,
         docker_memory=args.docker_memory,
         docker_network=args.docker_network,
+        email_body_llm_parse=args.email_body_llm_parse,
     )
 
     result = poll_and_process_once(mail_cfg, batch_cfg)

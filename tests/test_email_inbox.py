@@ -1,12 +1,16 @@
+import email
+import email.policy
 import zipfile
 from pathlib import Path
 
 from mvp_agent.email_inbox import (
     BatchConfig,
+    _json_from_llm_text,
     apply_roster_mapping,
     build_batch_args,
     build_notebook_student_index,
     compose_result_reply,
+    extract_message_text,
     parse_assignment_from_subject,
     prepare_submissions_root,
     select_config_and_submission_attachments,
@@ -16,6 +20,18 @@ from mvp_agent.email_inbox import (
 def test_parse_assignment_from_subject_extracts_override():
     subject = "Entrega final [assignment:examples/assignment.txt]"
     assert parse_assignment_from_subject(subject) == "examples/assignment.txt"
+
+
+def test_json_from_llm_text_accepts_code_fence():
+    raw = "```json\n{\"gradebook_column\": \"Nota\"}\n```"
+    parsed = _json_from_llm_text(raw)
+    assert parsed["gradebook_column"] == "Nota"
+
+
+def test_extract_message_text_plain():
+    msg = email.message.EmailMessage(policy=email.policy.default)
+    msg.set_content("hola instrucciones")
+    assert extract_message_text(msg) == "hola instrucciones"
 
 
 def test_prepare_submissions_root_from_notebook_attachment(tmp_path):
