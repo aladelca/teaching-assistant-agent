@@ -535,3 +535,7 @@ Puedes ajustar los selectores en los archivos JSON según la UI real.
 
 ## Licencia
 MIT (`LICENSE`).
+
+## Author
+aladelca
+
